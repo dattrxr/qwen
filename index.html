@@ -1,1 +1,20 @@
-<!doctype html><meta charset="utf-8"><title>Qwen</title><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=https://422446e5326f198b69.gradio.live"><script>location.replace("https://422446e5326f198b69.gradio.live")</script><p style="font-family:sans-serif">Opening Qwen... <a href="https://422446e5326f198b69.gradio.live">tap here</a> (link from 20 Nov 11:42 IST)</p>
+<!doctype html><meta charset="utf-8"><title>Qwen</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="cache-control" content="no-cache">
+<style>body{font-family:-apple-system,system-ui,sans-serif;background:#111;color:#eee;display:flex;
+min-height:90vh;align-items:center;justify-content:center;text-align:center;padding:20px}
+a{color:#8ab4ff}</style>
+<div id="m">Opening Qwen...</div>
+<script>
+// Always ask GitHub for the newest link (the page itself can be cached for 10 minutes).
+const FALLBACK = {"on": true, "url": "https://05fcb02685f24f93b3.gradio.live", "when": "20 Nov 11:59"};
+const show = h => document.getElementById("m").innerHTML = h;
+const go = d => {
+  if (d.on && d.url) { location.replace(d.url); show('Opening Qwen... <a href="' + d.url + '">tap here</a>'); }
+  else show('<h2>Qwen is switched off</h2><p>Since ' + (d.when || '?') + ' IST.</p>' +
+            '<p>Text your Telegram bot to wake him (about 15-45 min), or run the Kaggle cell.</p>');
+};
+fetch("https://api.github.com/repos/dattrxr/qwen/contents/link.json?t=" + Date.now(), {cache: "no-store"})
+  .then(r => r.json()).then(j => go(JSON.parse(atob(j.content.replace(/\n/g, "")))))
+  .catch(() => go(FALLBACK));
+</script>
