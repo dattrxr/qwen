@@ -38,7 +38,21 @@ def mem_state():
     return 0.0, 0.0
 
 
+def drop_cache():
+    """Tell Linux to forget cached copies of the model files. Kaggle counts that cache as RAM,
+    so a loaded 19 GB model left ~20 GB of 'used' memory behind."""
+    import glob
+    for f in set(glob.glob("/tmp/**/*.gguf", recursive=True) + glob.glob(str(MODEL_DIR) + "/**/*.gguf*", recursive=True)):
+        try:
+            fd = os.open(f, os.O_RDONLY)
+            os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+            os.close(fd)
+        except Exception:
+            pass
+
+
 def memlog(tag):
+    drop_cache()
     u, l = mem_state()
     with MEMLOG.open("a") as f:
         f.write(f"{time.strftime('%H:%M:%S')} {tag} used={u:.1f}GB limit={l:.1f}GB\n")
@@ -93,10 +107,7 @@ def cmd(gguf, np_, extra, proj):
 def boot(c, wait=600):
     subprocess.run(["pkill", "-f", "llama-server"], check=False)
     time.sleep(4)
-    try:
-        open("/proc/sys/vm/drop_caches", "w").write("1")
-    except Exception:
-        pass
+    drop_cache()
     log = open("/tmp/speedtest-server.log", "w")
     p = subprocess.Popen(c, env=_BOOT["env"], stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
     t0 = time.time()
@@ -107,6 +118,7 @@ def boot(c, wait=600):
         p.kill()
         tail = Path("/tmp/speedtest-server.log").read_text(errors="replace").strip().splitlines()[-4:]
         return None, " | ".join(tail)[-300:]
+    drop_cache()
     return time.time() - t0, ""
 
 
@@ -170,10 +182,7 @@ try:
     # free memory first: the running model + a 17 GB download together go past Kaggle's 30 GB RAM limit
     subprocess.run(["pkill", "-f", "llama-server"], check=False)
     time.sleep(5)
-    try:
-        open("/proc/sys/vm/drop_caches", "w").write("1")
-    except Exception:
-        pass
+    drop_cache()
     uns = dl("unsloth/Qwen3.8-27B-GGUF", "Qwen3.8-27B-UD-Q4_K_M.gguf", MODEL_DIR / "unsloth-UD-Q4_K_M.gguf")
     dfl = dl("ggml-org/Qwen3.8-27B-GGUF", "dflash-Qwen3.8-27B-Q4_0.gguf", MODEL_DIR / "dflash-Q4_0.gguf")
     mtp_cur = _mtp_flags()                      # current file: separate look-ahead part
@@ -213,6 +222,7 @@ finally:
         ok = _boot(opt.get("ctx", CTX), proj, _server_ok().get("kv", "q8_0"), _mtp_flags())
         if not ok:
             start_server()
+        drop_cache()
     except Exception:
         traceback.print_exc()
     SERVER["switching"] = False
